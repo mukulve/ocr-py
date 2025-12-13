@@ -1,5 +1,8 @@
 # OCR Tool
 
+![Uploading image.png…]()
+
+
 ## Pipeline
 - use easyocr (Python Library) to get all bounding boxes of text
 - crop each image to each bounding box area 
