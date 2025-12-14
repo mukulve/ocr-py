@@ -105,9 +105,6 @@ def main(files: list[str]):
         counter += 1
 
     merge_pdfs(output_pdfs)
-        
-
-
 
 app = customtkinter.CTk()
 app.geometry("600x400")

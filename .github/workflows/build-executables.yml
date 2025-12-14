@@ -1,0 +1,98 @@
+name: Build PyInstaller Executables
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pyinstaller customtkinter easyocr pymupdf opencv-python pillow ollama
+
+      - name: Build Windows exe
+        run: |
+          pyinstaller --onefile --windowed --name "OCR-Windows" --icon=icon.ico main.py
+
+      - name: Upload Windows to release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: dist/OCR-Windows.exe
+          asset_name: OCR-Windows.exe
+          asset_content_type: application/octet-stream
+
+  build-macos:
+    runs-on: macos-latest
+    needs: build-windows
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip3 install -r requirements.txt
+          pip3 install pyinstaller customtkinter easyocr pymupdf opencv-python pillow ollama
+
+      - name: Build macOS app
+        run: |
+          pyinstaller --windowed --onedir --name "OCR-macOS" --add-data "icon.ico:." main.py
+          ditto -c -k --sequesterRsrc --keepParent dist/OCR-macOS.app "OCR-macOS.app.zip"
+
+      - name: Upload macOS to release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: OCR-macOS.app.zip
+          asset_name: OCR-macOS.app.zip
+          asset_content_type: application/zip
+
+  build-linux:
+    runs-on: ubuntu-latest
+    needs: build-macos
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgl1-mesa-glx libglib2.0-0 tesseract-ocr
+          pip install -r requirements.txt
+          pip install pyinstaller customtkinter easyocr pymupdf opencv-python pillow ollama
+
+      - name: Build Linux executable
+        run: |
+          pyinstaller --onefile --name "OCR-Linux" main.py
+
+      - name: Upload Linux to release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: dist/OCR-Linux
+          asset_name: OCR-Linux
+          asset_content_type: application/octet-stream
